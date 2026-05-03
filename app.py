@@ -12,7 +12,7 @@ from geopy.distance import geodesic
 # CONFIG
 # ==========================================
 st.set_page_config(layout="wide", page_title="Grab Healing 💖")
-geolocator = Nominatim(user_agent="grab_healing_v17_full_width")
+geolocator = Nominatim(user_agent="grab_healing_v18_random_drivers")
 
 # ==========================================
 # CSS (GIỮ NGUYÊN PHONG CÁCH HỒNG TRẮNG)
@@ -34,7 +34,6 @@ st.markdown("""
         font-size: 28px; color: #be185d; font-weight: 800; 
         text-align: right; margin-top: 15px; border-top: 1px dashed #fce7f3; padding-top: 10px; 
     }
-    /* Ép khung bản đồ rộng tối đa */
     iframe { width: 100% !important; border-radius: 15px; }
 </style>
 """, unsafe_allow_html=True)
@@ -83,8 +82,15 @@ if st.session_state.step > 0:
         pos_don = (loc_don.latitude, loc_don.longitude)
         pos_den = (loc_den.latitude, loc_den.longitude)
         
-        random.seed(42)
-        drivers_pos = [(pos_don[0] + 0.003, pos_don[1] + 0.003) for _ in range(4)]
+        # TẠO NHIỀU TÀI XẾ RANDOM XUNG QUANH (12 XE)
+        random.seed(int(time.time())) # Random thực sự mỗi lần bấm
+        drivers_pos = []
+        for _ in range(12):
+            offset_lat = random.uniform(-0.008, 0.008)
+            offset_lon = random.uniform(-0.008, 0.008)
+            drivers_pos.append((pos_don[0] + offset_lat, pos_don[1] + offset_lon))
+        
+        # Chọn xe gần nhất để làm tài xế chính
         nearest_driver = drivers_pos[0]
         
         route_to_user, dist_to_user = get_route(nearest_driver, pos_don)
@@ -116,20 +122,22 @@ if st.session_state.step > 0:
                 <div class='price-tag'>{(15000 + dist_final*12000):,.0f} VNĐ</div>
             </div>"""
 
-        # GIAI ĐOẠN 1
+        # GIAI ĐOẠN 1: QUÉT TÌM XE (HIỆN NHIỀU XE RANDOM)
         if st.session_state.step == 1:
             st.markdown("<p style='text-align:center;'>🔍 <b>Đang quét tần số tài xế phù hợp...</b></p>", unsafe_allow_html=True)
             m1 = folium.Map(location=pos_don, zoom_start=15)
+            # Điểm đón của khách
             folium.Marker(pos_don, icon=folium.Icon(color='red', icon='heart', prefix='fa')).add_to(m1)
+            # Vẽ 12 xe xung quanh
             for p in drivers_pos:
                 folium.Marker(p, icon=folium.Icon(color='blue', icon='car', prefix='fa')).add_to(m1)
-            # FIX: width=None để bản đồ full ngang
+            
             st_folium(m1, width=None, height=450, key="map1")
-            time.sleep(2)
+            time.sleep(3) # Tăng thời gian chờ cho kịch tính
             st.session_state.step = 2
             st.rerun()
 
-        # GIAI ĐOẠN 2
+        # GIAI ĐOẠN 2: TÀI XẾ ĐẾN ĐÓN
         elif st.session_state.step == 2:
             st.markdown(full_info_card("KẾT NỐI THÀNH CÔNG"), unsafe_allow_html=True)
             st.markdown(f"<p style='text-align:center; color:white;'>Tài xế đang đến đón ({dist_to_user:.2f} km)...</p>", unsafe_allow_html=True)
@@ -137,13 +145,12 @@ if st.session_state.step > 0:
             folium.PolyLine(route_to_user, color='blue', weight=5).add_to(m2)
             folium.Marker(pos_don, icon=folium.Icon(color='red', icon='heart', prefix='fa')).add_to(m2)
             folium.Marker(nearest_driver, icon=folium.Icon(color='blue', icon='car', prefix='fa')).add_to(m2)
-            # FIX: width=None để bản đồ full ngang
             st_folium(m2, width=None, height=450, key="map2")
             time.sleep(3)
             st.session_state.step = 3
             st.rerun()
 
-        # GIAI ĐOẠN 3
+        # GIAI ĐOẠN 3: ĐANG DI CHUYỂN
         elif st.session_state.step == 3:
             st.markdown(full_info_card("HÀNH TRÌNH CHỮA LÀNH"), unsafe_allow_html=True)
             st.markdown(f"<p style='text-align:center; color:white;'>Đang di chuyển đến điểm đích ({dist_final:.2f} km)...</p>", unsafe_allow_html=True)
@@ -151,7 +158,6 @@ if st.session_state.step > 0:
             folium.PolyLine(route_to_dest, color='#db2777', weight=7).add_to(m3)
             folium.Marker(pos_don, icon=folium.Icon(color='red', icon='heart', prefix='fa')).add_to(m3)
             folium.Marker(pos_den, icon=folium.Icon(color='green', icon='flag', prefix='fa')).add_to(m3)
-            # FIX: width=None để bản đồ full ngang
             st_folium(m3, width=None, height=450, key="map3")
             
             if st.button("HOÀN THÀNH CHUYẾN ĐI"):
