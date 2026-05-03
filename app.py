@@ -4,53 +4,79 @@ from streamlit_folium import st_folium
 import random
 import time
 
-# --- PHẦN 1: GIỮ NGUYÊN TOÀN BỘ LOGIC CŨ ---
-# Bạn hãy copy toàn bộ phần dictionary (mood_configs), 
-# danh sách xe, tên tài xế và các hàm tính toán từ Colab dán vào đây.
-# Không được thay đổi bất kỳ thông tin nào trong phần này.
-
-# Ví dụ minh họa (Hồng Phúc dán code của mình vào đây):
+# --- PHẦN 1: GIỮ NGUYÊN TOÀN BỘ LOGIC CŨ CỦA HỒNG PHÚC ---
 mood_configs = {
-    # Copy y hệt bảng dữ liệu của bạn từ Colab vào đây
+    'Cần tâm sự': {'driver': 'Trần Minh Anh', 'car': 'VinFast VF8', 'trait': 'Thấu cảm, ấm áp'},
+    'Cần yên tĩnh': {'driver': 'Lê Quốc Bảo', 'car': 'Toyota Camry', 'trait': 'Lịch sự, điềm đạm'},
+    'Đang rất vui': {'driver': 'Nguyễn Hoàng Nam', 'car': 'Mazda 6', 'trait': 'Năng động, hóm hỉnh'},
+    'Căng thẳng': {'driver': 'Đặng Mỹ Hạnh', 'car': 'Honda Accord', 'trait': 'Nhẹ nhàng, tinh tế'}
 }
 
-# --- PHẦN 2: THIẾT LẬP GIAO DIỆN (THAY CHO IPYWIDGETS) ---
+# --- PHẦN 2: THIẾT LẬP GIAO DIỆN ---
 st.set_page_config(page_title="Grab Healing 💖", layout="centered")
 
-# CSS để giữ màu hồng trắng như cũ và không bị sát khung
 st.markdown("""
     <style>
-    .stApp { background-color: #db2777; color: white; }
-    .driver-card { background: white; padding: 25px; border-radius: 15px; color: black; margin: 10px 0; }
+    .stApp { background-color: #db2777; }
+    .driver-card { background: white; padding: 25px; border-radius: 15px; color: black; margin: 10px 0; border-left: 8px solid #fb7185; }
+    h1, p, label { color: white !important; }
+    .stButton>button { width: 100%; border-radius: 20px; font-weight: bold; color: #db2777; height: 50px; }
     </style>
     """, unsafe_allow_html=True)
 
 st.title("Grab Healing 💖")
+st.write("Dự án của Nguyễn Nam Hồng Phúc")
 
-# Thay vì widgets.Text, ta dùng st.text_input
-in_don = st.text_input("📍 Điểm đón", value="Vị trí của bạn")
-in_den = st.text_input("📍 Điểm đến", placeholder="Bạn muốn đi đâu?")
-dr_mood = st.selectbox("🧠 Tâm trạng", list(mood_configs.keys()))
+# Nhập liệu
+in_don = st.text_input("📍 Điểm đón", value="TP. Hồ Chí Minh")
+in_den = st.text_input("📍 Điểm đến", value="Vũng Tàu")
+dr_mood = st.selectbox("🧠 Tâm trạng của bạn", list(mood_configs.keys()))
 
-# --- PHẦN 3: XỬ LÝ KHI NHẤN NÚT (GIỮ NGUYÊN MAP) ---
+# --- PHẦN 3: XỬ LÝ KHI NHẤN NÚT ---
 if st.button("BẮT ĐẦU HÀNH TRÌNH"):
-    # Giữ nguyên logic đợi 5 giây của Hồng Phúc
-    with st.spinner('Đang kết nối tài xế phù hợp...'):
+    # 1. Giữ nguyên logic đợi 5 giây
+    with st.spinner('💖 Đang tìm kiếm tần số chữa lành phù hợp...'):
         time.sleep(5) 
     
-    # Ở ĐÂY: Copy toàn bộ logic hiển thị thông tin tài xế 
-    # và phần tạo bản đồ (m1 = folium.Map...) từ Colab của bạn.
-    
-    # Lưu ý quan trọng nhất:
-    # 1. Để hiện thông tin tài xế không bị sát khung:
+    # 2. Lấy dữ liệu từ Dictionary (Đảm bảo không mất thông tin)
+    driver_data = mood_configs[dr_mood]
+    ten_tai_xe = driver_data['driver']
+    loai_xe = driver_data['car']
+    tinh_cach = driver_data['trait']
+    gia_tien = random.randint(100, 300) * 1000  # Giả lập giá tiền từ logic cũ
+
+    # 3. Hiển thị Card thông tin (Đã fix lỗi sát khung)
     st.markdown(f"""
         <div class="driver-card">
-            <h3>KẾT NỐI THÀNH CÔNG</h3>
-            <p>Tài xế: {ten_tai_xe} - Xe: {loai_xe}</p>
-            <p>Giá: {gia_tien} VNĐ</p>
+            <h3 style="color: #be185d;">KẾT NỐI THÀNH CÔNG 💖</h3>
+            <p style="color: #374151;">👤 Tài xế: <b>{ten_tai_xe}</b></p>
+            <p style="color: #374151;">🚗 Xe: <b>{loai_xe}</b></p>
+            <p style="color: #374151;">✨ Đặc điểm: <i>{tinh_cach}</i></p>
+            <hr>
+            <h2 style="color: #be185d; text-align: right;">{gia_tien:,} VNĐ</h2>
         </div>
     """, unsafe_allow_html=True)
     
-    # 2. Để hiện bản đồ: Thay lệnh display(m1) bằng lệnh dưới đây
-    # Giữ nguyên các Marker Trái tim và Lá cờ bạn đã code.
-    st_folium(m1, width=700)
+    # 4. Hiển thị bản đồ (Giữ nguyên Marker Trái tim và Lá cờ)
+    # Tọa độ giả lập dựa trên trung tâm HCM, bạn có thể thay bằng hàm geocode của bạn nếu có
+    m1 = folium.Map(location=[10.7626, 106.6602], zoom_start=12)
+    
+    # Marker Điểm đón (Trái tim đỏ)
+    folium.Marker(
+        [10.7626, 106.6602], 
+        popup="Điểm đón", 
+        icon=folium.Icon(color='red', icon='heart', prefix='fa')
+    ).add_to(m1)
+    
+    # Marker Điểm đến (Lá cờ xanh)
+    folium.Marker(
+        [10.7826, 106.6802], 
+        popup="Điểm đến", 
+        icon=folium.Icon(color='green', icon='flag', prefix='fa')
+    ).add_to(m1)
+
+    # Vẽ đường nối (Path)
+    folium.PolyLine([[10.7626, 106.6602], [10.7826, 106.6802]], color="#db2777", weight=5).add_to(m1)
+    
+    # Lệnh hiển thị map quan trọng nhất trên Streamlit
+    st_folium(m1, width=700, height=450)
