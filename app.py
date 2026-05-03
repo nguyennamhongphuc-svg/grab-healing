@@ -12,10 +12,10 @@ from geopy.distance import geodesic
 # CONFIG
 # ==========================================
 st.set_page_config(layout="wide", page_title="Grab Healing 💖")
-geolocator = Nominatim(user_agent="grab_healing_v15_final_fix")
+geolocator = Nominatim(user_agent="grab_healing_v16_full_info")
 
 # ==========================================
-# CSS (FIX NỀN HỒNG CHỮ TRẮNG)
+# CSS (GIỮ NGUYÊN PHONG CÁCH HỒNG TRẮNG)
 # ==========================================
 st.markdown("""
 <style>
@@ -28,11 +28,13 @@ st.markdown("""
     .driver-info-card {
         background: white; color: #1f2937; border-radius: 20px; 
         padding: 30px; margin-top: 20px; border-left: 10px solid #fb7185;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     }
     .price-tag { 
         font-size: 28px; color: #be185d; font-weight: 800; 
         text-align: right; margin-top: 15px; border-top: 1px dashed #fce7f3; padding-top: 10px; 
     }
+    .stButton>button { border-radius: 20px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -45,10 +47,10 @@ def get_route(start, end):
         return [start, end], geodesic(start, end).km
 
 # ==========================================
-# KHỞI TẠO TRẠNG THÁI (SESSION STATE)
+# KHỞI TẠO TRẠNG THÁI
 # ==========================================
 if 'step' not in st.session_state:
-    st.session_state.step = 0  # 0: Chờ, 1: Tìm xe, 2: Tài xế đến, 3: Di chuyển
+    st.session_state.step = 0
 
 # ==========================================
 # UI CHÍNH
@@ -63,7 +65,6 @@ dr_mood = st.selectbox("🧠 Tâm trạng", ['Cần tâm sự', 'Cần yên tĩn
 dr_gender = st.selectbox("👤 Giới tính tài xế", ['Nam', 'Nữ', 'Bất kỳ'])
 dr_age = st.selectbox("🎂 Độ tuổi tài xế", ['18-25', '26-35', '36-50'])
 
-# Nút bấm chính
 if st.button("BẮT ĐẦU HÀNH TRÌNH"):
     if in_don and in_den:
         st.session_state.step = 1
@@ -71,7 +72,7 @@ if st.button("BẮT ĐẦU HÀNH TRÌNH"):
         st.error("Vui lòng nhập đầy đủ lộ trình!")
 
 # ==========================================
-# LOGIC XỬ LÝ THEO TỪNG BƯỚC
+# LOGIC HIỂN THỊ CHI TIẾT
 # ==========================================
 if st.session_state.step > 0:
     loc_don = geolocator.geocode(in_don)
@@ -81,8 +82,8 @@ if st.session_state.step > 0:
         pos_don = (loc_don.latitude, loc_don.longitude)
         pos_den = (loc_den.latitude, loc_den.longitude)
         
-        # Tạo dữ liệu giả lập (Giữ nguyên logic của Hồng Phúc)
-        random.seed(42) # Giữ kết quả ổn định khi rerun
+        # Dữ liệu tài xế (Giữ đúng logic Hồng Phúc)
+        random.seed(42)
         drivers_pos = [(pos_don[0] + 0.003, pos_don[1] + 0.003) for _ in range(4)]
         nearest_driver = drivers_pos[0]
         
@@ -96,8 +97,27 @@ if st.session_state.step > 0:
             'Căng thẳng': ('Đặng Mỹ Hạnh', 'Honda Accord', 'Nhẹ nhàng, tinh tế', 'Giúp tôi thư giãn rất nhiều.')
         }
         driver_name, car_model, trait, feedback = mood_configs[dr_mood]
+        stars = "4.9"
+        trips = random.randint(200, 500)
 
-        # HIỂN THỊ THEO TỪNG GIAI ĐOẠN
+        # HÀM TẠO CARD HIỂN THỊ ĐẦY ĐỦ THÔNG TIN
+        def full_info_card(status_title):
+            return f"""<div class='driver-info-card'>
+                <div style='display: flex; justify-content: space-between; align-items: center;'>
+                    <b style='color:#db2777; font-size:22px;'>{status_title} 💖</b>
+                    <span style='color:#f59e0b; font-weight:bold; font-size:18px;'>⭐ {stars}</span>
+                </div>
+                <div style='margin-top:15px; font-size:16px; color:#1f2937; line-height: 1.7;'>
+                    👤 Tài xế: <b>{driver_name}</b> ({dr_age} | {dr_gender})<br>
+                    🚗 Loại xe: <b>{car_model}</b><br>
+                    ✨ Tính cách: <i>{trait}</i><br>
+                    🛣️ Số chuyến: <b>{trips} chuyến</b><br>
+                    💬 Feedback: <span style='color:#4b5563;'>"{feedback}"</span>
+                </div>
+                <div class='price-tag'>{(15000 + dist_final*12000):,.0f} VNĐ</div>
+            </div>"""
+
+        # GIAI ĐOẠN 1
         if st.session_state.step == 1:
             st.markdown("<p style='text-align:center;'>🔍 <b>Đang quét tần số tài xế phù hợp...</b></p>", unsafe_allow_html=True)
             m1 = folium.Map(location=pos_don, zoom_start=15)
@@ -109,13 +129,9 @@ if st.session_state.step > 0:
             st.session_state.step = 2
             st.rerun()
 
+        # GIAI ĐOẠN 2
         elif st.session_state.step == 2:
-            st.markdown(f"""<div class='driver-info-card'>
-                <b style='color:#db2777; font-size:20px;'>KẾT NỐI THÀNH CÔNG 💖</b><br>
-                👤 Tài xế: <b>{driver_name}</b> ({dr_age} | {dr_gender})<br>
-                🚗 Xe: <b>{car_model}</b> | ✨ <i>{trait}</i>
-                <div class='price-tag'>{(15000 + dist_final*12000):,.0f} VNĐ</div>
-            </div>""", unsafe_allow_html=True)
+            st.markdown(full_info_card("KẾT NỐI THÀNH CÔNG"), unsafe_allow_html=True)
             st.markdown(f"<p style='text-align:center; color:white;'>Tài xế đang đến đón ({dist_to_user:.2f} km)...</p>", unsafe_allow_html=True)
             m2 = folium.Map(location=pos_don, zoom_start=15)
             folium.PolyLine(route_to_user, color='blue', weight=5).add_to(m2)
@@ -126,12 +142,9 @@ if st.session_state.step > 0:
             st.session_state.step = 3
             st.rerun()
 
+        # GIAI ĐOẠN 3 (ĐÃ HIỂN THỊ ĐẦY ĐỦ NHƯ BẠN YÊU CẦU)
         elif st.session_state.step == 3:
-            st.markdown(f"""<div class='driver-info-card'>
-                <b style='color:#db2777; font-size:20px;'>HÀNH TRÌNH CHỮA LÀNH 💖</b><br>
-                👤 Tài xế: <b>{driver_name}</b> | 💬 "{feedback}"
-                <div class='price-tag'>{(15000 + dist_final*12000):,.0f} VNĐ</div>
-            </div>""", unsafe_allow_html=True)
+            st.markdown(full_info_card("HÀNH TRÌNH CHỮA LÀNH"), unsafe_allow_html=True)
             st.markdown(f"<p style='text-align:center; color:white;'>Đang di chuyển đến điểm đích ({dist_final:.2f} km)...</p>", unsafe_allow_html=True)
             m3 = folium.Map(location=pos_don, zoom_start=14)
             folium.PolyLine(route_to_dest, color='#db2777', weight=7).add_to(m3)
