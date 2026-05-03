@@ -1,123 +1,127 @@
-import streamlit as st
+import numpy as np
 import folium
-from streamlit_folium import st_folium
 import random
+import requests
 import time
+import streamlit as st
+from streamlit_folium import st_folium
+from geopy.geocoders import Nominatim
+from geopy.distance import geodesic
 
-# --- PHẦN 1: GIỮ NGUYÊN 100% LOGIC CỦA HỒNG PHÚC ---
-mood_configs = {
-    'Cần tâm sự': {
-        'driver': 'Trần Minh Anh', 
-        'gender': 'Nữ', 
-        'age': 28, 
-        'car': 'VinFast VF8', 
-        'trait': 'Thấu cảm, ấm áp'
-    },
-    'Cần yên tĩnh': {
-        'driver': 'Lê Quốc Bảo', 
-        'gender': 'Nam', 
-        'age': 35, 
-        'car': 'Toyota Camry', 
-        'trait': 'Lịch sự, điềm đạm'
-    },
-    'Đang rất vui': {
-        'driver': 'Nguyễn Hoàng Nam', 
-        'gender': 'Nam', 
-        'age': 25, 
-        'car': 'Mazda 6', 
-        'trait': 'Năng động, hóm hỉnh'
-    },
-    'Căng thẳng': {
-        'driver': 'Đặng Mỹ Hạnh', 
-        'gender': 'Nữ', 
-        'age': 30, 
-        'car': 'Honda Accord', 
-        'trait': 'Nhẹ nhàng, tinh tế'
-    }
-}
+# ==========================================
+# STREAMLIT CONFIG
+# ==========================================
+st.set_page_config(layout="wide")
 
-# --- PHẦN 2: THIẾT LẬP GIAO DIỆN ---
-st.set_page_config(page_title="Grab Healing 💖", layout="centered")
+geolocator = Nominatim(user_agent="movin_healing_v12_padding_fix")
 
+# ==========================================
+# GIỮ NGUYÊN CSS
+# ==========================================
 st.markdown("""
-    <style>
-    .stApp { background-color: #db2777; }
-    .driver-card { 
-        background: white; 
-        padding: 25px; 
-        border-radius: 15px; 
-        color: black; 
-        margin: 10px 0; 
-        border-left: 8px solid #fb7185;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+<style>
+    .container { width:100% !important; }
+    .app-container {
+        background-color: #db2777;
+        padding: 40px 20px;
+        width: 100vw; min-height: 100vh;
+        margin: -20px;
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+        color: white;
+        display: flex; flex-direction: column; align-items: center;
     }
-    h1, p, label { color: white !important; }
-    .stButton>button { 
-        width: 100%; 
-        border-radius: 20px; 
-        font-weight: bold; 
-        color: #db2777; 
-        height: 50px;
-        background-color: white;
+    .inner-wrapper { width: 100%; max-width: 500px; }
+    .title-white { text-align: center; font-size: 38px; font-weight: 800; color: white; margin-bottom: 5px; }
+    .slogan-white { text-align: center; font-size: 16px; color: #fce7f3; margin-bottom: 30px; }
+    
+    .input-group {
+        background: rgba(255, 255, 255, 0.15);
+        padding: 20px; border-radius: 20px; margin-bottom: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
     }
-    </style>
-    """, unsafe_allow_html=True)
-
-st.title("Grab Healing 💖")
-st.write("Dự án của Nguyễn Nam Hồng Phúc")
-
-# Nhập liệu
-in_don = st.text_input("📍 Điểm đón", value="TP. Hồ Chí Minh")
-in_den = st.text_input("📍 Điểm đến", value="Vũng Tàu")
-dr_mood = st.selectbox("🧠 Tâm trạng của bạn", list(mood_configs.keys()))
-
-# --- PHẦN 3: XỬ LÝ LOGIC ---
-
-# Sử dụng Session State để giữ bản đồ không bị tắt khi tương tác
-if 'show_result' not in st.session_state:
-    st.session_state.show_result = False
-
-if st.button("BẮT ĐẦU HÀNH TRÌNH"):
-    st.session_state.show_result = True
-    with st.spinner('💖 Đang tìm kiếm tần số chữa lành phù hợp...'):
-        time.sleep(3) # Giảm xuống 3s để trải nghiệm mượt hơn
-
-if st.session_state.show_result:
-    # Lấy dữ liệu tài xế dựa trên tâm trạng
-    driver_data = mood_configs[dr_mood]
+    .label-white { color: white; font-size: 13px; font-weight: bold; margin-bottom: 8px; display: block; }
     
-    # Hiển thị Card thông tin đầy đủ (Giới tính, Độ tuổi)
-    st.markdown(f"""
-        <div class="driver-card">
-            <h3 style="color: #be185d; margin-top:0;">KẾT NỐI THÀNH CÔNG 💖</h3>
-            <p style="color: #374151;">👤 Tài xế: <b>{driver_data['driver']}</b></p>
-            <p style="color: #374151;">🚻 Giới tính: <b>{driver_data['gender']}</b> | 🎂 Độ tuổi: <b>{driver_data['age']}</b></p>
-            <p style="color: #374151;">🚗 Xe: <b>{driver_data['car']}</b></p>
-            <p style="color: #374151;">✨ Đặc điểm: <i>{driver_data['trait']}</i></p>
-            <hr style="border: 0.5px solid #eee;">
-            <h2 style="color: #be185d; text-align: right; margin-bottom:0;">250,000 VNĐ</h2>
-        </div>
-    """, unsafe_allow_html=True)
+    .btn-healing {
+        background: white !important; color: #db2777 !important; font-weight: 900 !important;
+        height: 60px !important; border-radius: 25px !important; width: 100% !important;
+        border: none !important; font-size: 18px !important; cursor: pointer;
+    }
     
-    # Khởi tạo bản đồ
-    m1 = folium.Map(location=[10.7626, 106.6602], zoom_start=12)
-    
-    # Marker Điểm đón (Trái tim đỏ)
-    folium.Marker(
-        [10.7626, 106.6602], 
-        popup="Điểm đón", 
-        icon=folium.Icon(color='red', icon='heart', prefix='fa')
-    ).add_to(m1)
-    
-    # Marker Điểm đến (Lá cờ xanh)
-    folium.Marker(
-        [10.7826, 106.6802], 
-        popup="Điểm đến", 
-        icon=folium.Icon(color='green', icon='flag', prefix='fa')
-    ).add_to(m1)
+    .driver-info-card {
+        background: white; color: #1f2937; border-radius: 20px; 
+        padding: 35px;
+        margin-top: 20px; border-left: 10px solid #fb7185; width: 100%;
+    }
+    .price-tag { 
+        font-size: 30px; color: #be185d; font-weight: 800; 
+        text-align: right; margin-top: 20px; border-top: 1px dashed #fce7f3; 
+        padding-top: 15px; 
+    }
+</style>
+""", unsafe_allow_html=True)
 
-    # Vẽ đường nối
-    folium.PolyLine([[10.7626, 106.6602], [10.7826, 106.6802]], color="#db2777", weight=5).add_to(m1)
+# ==========================================
+# HÀM GIỮ NGUYÊN
+# ==========================================
+def get_route(start, end):
+    try:
+        url = f"http://router.project-osrm.org/route/v1/driving/{start[1]},{start[0]};{end[1]},{end[0]}?overview=full&geometries=geojson"
+        res = requests.get(url, timeout=5).json()
+        return [(c[1], c[0]) for c in res['routes'][0]['geometry']['coordinates']], res['routes'][0]['distance'] / 1000
+    except:
+        return [start, end], geodesic(start, end).km
+
+# ==========================================
+# UI
+# ==========================================
+st.markdown('<div class="app-container">', unsafe_allow_html=True)
+st.markdown('<div class="inner-wrapper">', unsafe_allow_html=True)
+
+st.markdown('<div class="title-white">🚗 Movin Healing</div>', unsafe_allow_html=True)
+st.markdown('<div class="slogan-white">Chuyến đi không chỉ là di chuyển...</div>', unsafe_allow_html=True)
+
+# INPUT
+in_don = st.text_input("Điểm đón")
+in_den = st.text_input("Điểm đến")
+
+# BUTTON
+if st.button("Bắt đầu hành trình"):
     
-    # Hiển thị bản đồ cố định
-    st_folium(m1, width=700, height=450, key="main_map")
+    if not in_don or not in_den:
+        st.markdown("<b style='color:white;'>Vui lòng nhập lộ trình!</b>", unsafe_allow_html=True)
+    else:
+        try:
+            loc1 = geolocator.geocode(in_don)
+            loc2 = geolocator.geocode(in_den)
+
+            start = (loc1.latitude, loc1.longitude)
+            end = (loc2.latitude, loc2.longitude)
+
+            route, distance = get_route(start, end)
+
+            # MAP
+            m = folium.Map(location=start, zoom_start=13)
+            folium.Marker(start, tooltip="Điểm đón").add_to(m)
+            folium.Marker(end, tooltip="Điểm đến").add_to(m)
+            folium.PolyLine(route, color="pink", weight=6).add_to(m)
+
+            st_folium(m, width=700, height=500)
+
+            # GIẢ LẬP TÀI XẾ
+            driver_name = random.choice(["Anh Tuấn", "Chị Linh", "Anh Hùng", "Chị Mai"])
+            rating = round(random.uniform(4.5, 5.0), 1)
+            price = int(distance * 15000)
+
+            st.markdown(f"""
+            <div class="driver-info-card">
+                <h3>🚕 Tài xế: {driver_name}</h3>
+                <p>⭐ Đánh giá: {rating}</p>
+                <p>📍 Khoảng cách: {distance:.2f} km</p>
+                <div class="price-tag">{price:,} VND</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        except:
+            st.markdown("<b style='color:white;'>Không tìm thấy địa điểm!</b>", unsafe_allow_html=True)
+
+st.markdown('</div></div>', unsafe_allow_html=True)
