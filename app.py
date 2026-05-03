@@ -12,7 +12,7 @@ from geopy.distance import geodesic
 # CONFIG
 # ==========================================
 st.set_page_config(layout="wide", page_title="Grab Healing 💖")
-geolocator = Nominatim(user_agent="grab_healing_v16_full_info")
+geolocator = Nominatim(user_agent="grab_healing_v17_full_width")
 
 # ==========================================
 # CSS (GIỮ NGUYÊN PHONG CÁCH HỒNG TRẮNG)
@@ -34,7 +34,8 @@ st.markdown("""
         font-size: 28px; color: #be185d; font-weight: 800; 
         text-align: right; margin-top: 15px; border-top: 1px dashed #fce7f3; padding-top: 10px; 
     }
-    .stButton>button { border-radius: 20px !important; }
+    /* Ép khung bản đồ rộng tối đa */
+    iframe { width: 100% !important; border-radius: 15px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -72,7 +73,7 @@ if st.button("BẮT ĐẦU HÀNH TRÌNH"):
         st.error("Vui lòng nhập đầy đủ lộ trình!")
 
 # ==========================================
-# LOGIC HIỂN THỊ CHI TIẾT
+# LOGIC HIỂN THỊ
 # ==========================================
 if st.session_state.step > 0:
     loc_don = geolocator.geocode(in_don)
@@ -82,7 +83,6 @@ if st.session_state.step > 0:
         pos_don = (loc_don.latitude, loc_don.longitude)
         pos_den = (loc_den.latitude, loc_den.longitude)
         
-        # Dữ liệu tài xế (Giữ đúng logic Hồng Phúc)
         random.seed(42)
         drivers_pos = [(pos_don[0] + 0.003, pos_don[1] + 0.003) for _ in range(4)]
         nearest_driver = drivers_pos[0]
@@ -100,7 +100,6 @@ if st.session_state.step > 0:
         stars = "4.9"
         trips = random.randint(200, 500)
 
-        # HÀM TẠO CARD HIỂN THỊ ĐẦY ĐỦ THÔNG TIN
         def full_info_card(status_title):
             return f"""<div class='driver-info-card'>
                 <div style='display: flex; justify-content: space-between; align-items: center;'>
@@ -124,7 +123,8 @@ if st.session_state.step > 0:
             folium.Marker(pos_don, icon=folium.Icon(color='red', icon='heart', prefix='fa')).add_to(m1)
             for p in drivers_pos:
                 folium.Marker(p, icon=folium.Icon(color='blue', icon='car', prefix='fa')).add_to(m1)
-            st_folium(m1, width=700, height=450, key="map1")
+            # FIX: width=None để bản đồ full ngang
+            st_folium(m1, width=None, height=450, key="map1")
             time.sleep(2)
             st.session_state.step = 2
             st.rerun()
@@ -137,12 +137,13 @@ if st.session_state.step > 0:
             folium.PolyLine(route_to_user, color='blue', weight=5).add_to(m2)
             folium.Marker(pos_don, icon=folium.Icon(color='red', icon='heart', prefix='fa')).add_to(m2)
             folium.Marker(nearest_driver, icon=folium.Icon(color='blue', icon='car', prefix='fa')).add_to(m2)
-            st_folium(m2, width=700, height=450, key="map2")
+            # FIX: width=None để bản đồ full ngang
+            st_folium(m2, width=None, height=450, key="map2")
             time.sleep(3)
             st.session_state.step = 3
             st.rerun()
 
-        # GIAI ĐOẠN 3 (ĐÃ HIỂN THỊ ĐẦY ĐỦ NHƯ BẠN YÊU CẦU)
+        # GIAI ĐOẠN 3
         elif st.session_state.step == 3:
             st.markdown(full_info_card("HÀNH TRÌNH CHỮA LÀNH"), unsafe_allow_html=True)
             st.markdown(f"<p style='text-align:center; color:white;'>Đang di chuyển đến điểm đích ({dist_final:.2f} km)...</p>", unsafe_allow_html=True)
@@ -150,7 +151,8 @@ if st.session_state.step > 0:
             folium.PolyLine(route_to_dest, color='#db2777', weight=7).add_to(m3)
             folium.Marker(pos_don, icon=folium.Icon(color='red', icon='heart', prefix='fa')).add_to(m3)
             folium.Marker(pos_den, icon=folium.Icon(color='green', icon='flag', prefix='fa')).add_to(m3)
-            st_folium(m3, width=700, height=450, key="map3")
+            # FIX: width=None để bản đồ full ngang
+            st_folium(m3, width=None, height=450, key="map3")
             
             if st.button("HOÀN THÀNH CHUYẾN ĐI"):
                 st.session_state.step = 0
